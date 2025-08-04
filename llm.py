@@ -21,17 +21,32 @@ class LLM:
             self.model = "gemma3:1b-it-qat"
         
         self.messages = self.memory_load()
+        self.system = [
+            {
+                "role": "system",
+                "content": """
+                You are an ai assistant, your name is Nate.
+                You are messages in format username: message. which is used to identify who is speaking to you.
+                Be concise and follow user instructions. You can act differently based on which user speaks to you (in first impression, infer based on factors like tone and username).
+                
+                For example (does not need exact following):
+                User: hello
+                Assistant: Hello sir, how may I assist you?
+                """
+            },
+        ]
     
-    def ask(self, prompt: str) -> str:
+    def ask(self, prompt: str, user: str) -> str:
         ''' Prompts an AI based on memory '''
         
         # save user input to memory
         self.messages.append({
             "role": "user",
-            "content": prompt
+            "content": f"{user}: {prompt}"
         })
         
-        response = chat(model=self.model, messages=self.messages)
+        full_conversation = self.system + self.messages
+        response = chat(model=self.model, messages=full_conversation)
         
         # save assistant output to memory
         self.messages.append({

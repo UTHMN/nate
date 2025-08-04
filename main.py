@@ -15,10 +15,11 @@ async def root():
 # Define a request model
 class PromptRequest(BaseModel):
     prompt: str
+    user: str
 
 @app.post("/ask")
 async def ask(request: PromptRequest):
-    return {"message": model.ask(request.prompt)}
+    return {"message": model.ask(request.prompt, request.user)}
 
 if __name__ == "__main__":
     import uvicorn
