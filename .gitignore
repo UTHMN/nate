@@ -205,3 +205,5 @@ __marimo__/
 # Main app
 messages.json
 .env
+audio_test
+speaker_db.npy
