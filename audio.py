@@ -17,6 +17,11 @@ from os import getenv
 
 load_dotenv(join(dirname(__file__), ".env"))
 
+# TODO:
+# 1. Add more accepted audio types (wav, mp3, aac, flacc)
+# 2. Improve enrollment process for higher access (multiple embeddings per speaker)
+
+
 # ENROLLMENT EXAMPLE PHRASES
 # The quick brown fox jumps over the lazy dog x3 (different tones and volume)
 # Pack my box with five dozen liquor jugs x3 (different tones and volume)
@@ -85,8 +90,8 @@ def classify_and_transcribe(mp3_path: str):
             name: 1 - cosine(emb, ref_emb)
             for name, ref_emb in speaker_db.items()
         }
-        best_speaker = min(scores, key=scores.get)
-        confidence = 1 - scores[best_speaker]
+        best_speaker = max(scores, key=scores.get)
+        confidence = scores[best_speaker]
 
         print(f"[🗣️] {best_speaker} [{turn.start:.1f}s → {turn.end:.1f}s] (conf: {confidence:.2f})")
         speaker_segments.append({
