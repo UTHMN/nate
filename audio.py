@@ -11,18 +11,32 @@ from scipy.spatial.distance import cosine
 import warnings
 import pprint
 
+from dotenv import load_dotenv
+from os.path import dirname, join
+from os import getenv
+
+load_dotenv(join(dirname(__file__), ".env"))
+
+# ENROLLMENT EXAMPLE PHRASES
+# The quick brown fox jumps over the lazy dog x3 (different tones and volume)
+# Pack my box with five dozen liquor jugs x3 (different tones and volume)
+# The five boxing wizards jump quickly x3 (different tones and volume)
+
+# TESTING PHRASES
+# Multiple random sentences with different tones and volume e.g.
+# Twelve quirky zebras jogged briskly through the fog at 6:42 a.m., humming Beethoven's Fifth.
+
 warnings.filterwarnings("ignore", category=UserWarning, module="webrtcvad")
 
 # Variables
 SPEAKER_DB_PATH = "speaker_db.npy"
-HUGGING_FACE_TOKEN = "" # Read permissions to use the Hugging Face models
 
 # Global models
 encoder = VoiceEncoder()
 whisper_model = whisper.load_model("small")  # Can be "small", "medium", etc.
 diarization_pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
-    use_auth_token=HUGGING_FACE_TOKEN  # ← insert token here
+    use_auth_token=getenv("HUGGING_FACE_TOKEN")  # ← insert token here
 )
 
 # Load or initialize speaker DB
