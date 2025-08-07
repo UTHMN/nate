@@ -21,7 +21,6 @@ load_dotenv(join(dirname(__file__), ".env"))
 # 1. Add more accepted audio types (wav, mp3, aac, flacc)
 # 2. Improve enrollment process for higher access (multiple embeddings per speaker)
 
-
 # ENROLLMENT EXAMPLE PHRASES
 # The quick brown fox jumps over the lazy dog x3 (different tones and volume)
 # Pack my box with five dozen liquor jugs x3 (different tones and volume)
