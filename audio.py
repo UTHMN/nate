@@ -1,5 +1,4 @@
 import os
-import json
 import numpy as np
 from resemblyzer import VoiceEncoder, preprocess_wav
 from pydub import AudioSegment
@@ -19,16 +18,20 @@ load_dotenv(join(dirname(__file__), ".env"))
 
 # TODO:
 # 1. Add more accepted audio types (wav, mp3, aac, flacc)
-# 2. Improve enrollment process for higher access (multiple embeddings per speaker)
 
-# ENROLLMENT EXAMPLE PHRASES
-# The quick brown fox jumps over the lazy dog x3 (different tones and volume)
-# Pack my box with five dozen liquor jugs x3 (different tones and volume)
-# The five boxing wizards jump quickly x3 (different tones and volume)
-
-# TESTING PHRASES
-# Multiple random sentences with different tones and volume e.g.
-# Twelve quirky zebras jogged briskly through the fog at 6:42 a.m., humming Beethoven's Fifth.
+# Enrollment help:
+# Speaking types
+#   - Tones: Neutral, energetic, calm
+#   - Volumes: Normal, louder, softer
+#
+# TONE,       VOLUME       SENTENCE
+# Neutral	  Normal       The quick brown fox jumps over the lazy dog beside a calm riverbank at sunset
+# Neutral     Louder       19 Bold penguins briskly marched into the wind, flapping their wings and honking in protest
+# Neutral     Softer       Silent raindrops tapped on the old tin roof as the fire crackled gently in the corner
+# Energetic   Normal       Every flaming rocket zigzagged across the night sky as the crowd roared with excitement
+# Energetic   Louder       Yes! The lions charged the dusty field as thunder echoed and spectators screamed with joy!
+# Calm        Normal       The ocean whispered beneath the moon as soft breezes stirred the seagrass below the cliffs
+# Calm        Softer       With each breath, the mountain rested in stillness while snowflakes melted on warm fur
 
 warnings.filterwarnings("ignore", category=UserWarning, module="webrtcvad")
 
@@ -55,13 +58,18 @@ def mp3_to_wav(mp3_path: str, wav_path: str):
     audio.export(wav_path, format="wav")
 
 def enroll_speaker(name: str, mp3_path: str):
+    name = name.lower()
     wav_path = mp3_path.replace(".mp3", ".wav")
     mp3_to_wav(mp3_path, wav_path)
     wav = preprocess_wav(wav_path)
     embedding = encoder.embed_utterance(wav)
-    speaker_db[name] = embedding
+    if name in speaker_db:
+        speaker_db[name].append(embedding)
+        print(f"[+] Added another embedding for speaker '{name}'.")
+    else:
+        speaker_db[name] = [embedding]
+        print(f"[✔] Enrolled new speaker '{name}'.")
     np.save(SPEAKER_DB_PATH, speaker_db)
-    print(f"[✔] Enrolled speaker '{name}'.")
 
 def classify_and_transcribe(mp3_path: str):
     wav_path = mp3_path.replace(".mp3", ".wav")
@@ -86,21 +94,29 @@ def classify_and_transcribe(mp3_path: str):
         audio, sr = get_segment_audio(wav_path, turn)
         emb = encoder.embed_utterance(audio.numpy()[0])
         scores = {
-            name: 1 - cosine(emb, ref_emb)
-            for name, ref_emb in speaker_db.items()
+            name: max(1 - cosine(emb, ref_emb) for ref_emb in emb_list)
+            for name, emb_list in speaker_db.items()
         }
+
         best_speaker = max(scores, key=scores.get)
         confidence = scores[best_speaker]
 
         print(f"[🗣️] {best_speaker} [{turn.start:.1f}s → {turn.end:.1f}s] (conf: {confidence:.2f})")
         speaker_segments.append({
             "speaker": best_speaker,
-            "start": turn.start,
-            "end": turn.end,
-            "confidence": confidence
+            "start": float(turn.start),
+            "end": float(turn.end),
+            "confidence": float(confidence)
         })
 
     return {
         "transcript": full_transcript,
         "speaker_segments": speaker_segments
     }
+
+def transcribe(mp3_path: str):
+    wav_path = mp3_path.replace(".mp3", ".wav")
+    mp3_to_wav(mp3_path, wav_path)
+    result = whisper_model.transcribe(wav_path, language="en", verbose=False)
+    full_transcript = result["text"]
+    return full_transcript
