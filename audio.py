@@ -8,7 +8,10 @@ import whisper
 from pyannote.core import Segment
 from scipy.spatial.distance import cosine
 import warnings
-import pprint
+
+import hashlib
+from gtts import gTTS
+from os.path import exists
 
 from dotenv import load_dotenv
 from os.path import dirname, join
@@ -120,3 +123,14 @@ def transcribe(mp3_path: str):
     result = whisper_model.transcribe(wav_path, language="en", verbose=False)
     full_transcript = result["text"]
     return full_transcript
+
+def tts(text: str):
+    tts = gTTS(text=text, lang="en")
+    h = hashlib.sha256(text.encode()).hexdigest()
+    print(f"hashed tts file: /tmp/{h}.mp3")
+    filepath = f"/tmp/{h}.mp3"
+    if exists(filepath):
+        print(f"tts file already exists: {filepath}")
+        return filepath
+    tts.save(filepath)
+    return filepath

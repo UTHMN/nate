@@ -9,7 +9,8 @@ from llm import LLM
 import audio
 import hashlib
 import os
-from fastapi import UploadFile, File, Form, HTTPException
+from fastapi import UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi.responses import FileResponse
 
 app = FastAPI()
 model = LLM()
@@ -40,7 +41,8 @@ async def audio_root():
         "message": {
             "/audio/transcribe": "Transcribes an mp3 file and returns the transcript",
             "/audio/enroll": "Enrolls a user for voice identification, also supports adding embeddings to a person",
-            "/audio/transcribe_identify": "Transcribes an mp3 audio file and also sends the user identified"
+            "/audio/transcribe_identify": "Transcribes an mp3 audio file and also sends the user identified",
+            "/audio/tts": "Converts text to speech using Google TTS"
         }
     }
 
@@ -108,6 +110,18 @@ async def audio_transcribe_identify(file: UploadFile = File(...)):
         return result
     finally:
         delete_file(file_path)
+
+def delete_file(path: str):
+    try:
+        os.remove(path)
+    except Exception as e:
+        print(f"Error deleting file: {e}")
+
+@app.post("/audio/tts")
+async def audio_tts(text: str, background_tasks: BackgroundTasks):
+    filepath = audio.tts(text)  # Generate the MP3 file
+    background_tasks.add_task(delete_file, filepath)
+    return FileResponse(filepath, media_type="audio/mpeg", filename="output.mp3")
 
 if __name__ == "__main__":
     import uvicorn
