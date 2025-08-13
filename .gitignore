@@ -208,3 +208,4 @@ audio_test
 speaker_db.npy
 tokens.json
 memories
+config.json
