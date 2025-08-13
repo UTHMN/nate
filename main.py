@@ -12,8 +12,12 @@ import os
 from fastapi import UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 
+# Tokens
+from tokens import TokenManager
+
 app = FastAPI()
 model = LLM()
+tokenManage = TokenManager()
 
 # TODO: Return valid routes (not subroutes)
 @app.get("/")
@@ -21,7 +25,9 @@ async def root():
     return {
         "message": {
             "/": "Displays this message",
-            "/ask": "Query the AI",
+            "/docs": "OpenAPI documentation",
+            "/remove": "Remove a user from the database",
+            "/messages/*": "Multiply query related endpoints",
             "/audio/*": "Multiple audio endpoints",
         }
     }
@@ -29,11 +35,46 @@ async def root():
 # Define a request model
 class PromptRequest(BaseModel):
     prompt: str
-    user: str # TODO: convert to tokens instead of username
+    token: str # TODO: convert to tokens instead of username
+    
+class EnrollRequest(BaseModel):
+    username: str
+    
+class RemoveRequest(BaseModel):
+    token: str
 
-@app.post("/ask")
+# TODO: Remove voice embeddings.
+@app.post("/remove")
+async def remove(request: RemoveRequest):
+    try:
+        model.delete_user(request.token)
+        return {"message": f"User {request.token} removed successfully."}
+    except ValueError as e:
+        return {"error": f"Token {request.token} is invalid: {e}"}
+
+@app.get("/messages")
+async def messages_root():
+    return {
+        "message": {
+            "/messages/ask": "Query the AI",
+            "/messages/enroll": "Enrolls a user for and returns a token, also supports adding embeddings to a person",
+        }
+    }
+
+@app.post("/messages/ask")
 async def ask(request: PromptRequest):
-    return {"message": model.ask(request.prompt, request.user)}
+    try:
+        return {"message": model.ask(request.prompt, request.token)}
+    except ValueError as e:
+        return {"error": f"Token {request.token} is invalid: {e}"}
+
+@app.post("/messages/enroll")
+async def enroll(request: EnrollRequest):
+    try:
+        token = model.enroll_user(request.username)
+        return {"token": token}
+    except ValueError as e:
+        return {"error": f"User {request.username} is already enrolled: {e}"}
 
 @app.get("/audio")
 async def audio_root():
@@ -80,7 +121,7 @@ async def audio_transcribe(file: UploadFile = File(...)):
 @app.post("/audio/enroll")
 async def audio_enroll(
     file: UploadFile = File(...),
-    user: str = Form(...)
+    token: str = Form(...)
 ):
     file_bytes = await file.read()
     ext = file.filename.split(".")[-1].lower()
@@ -91,8 +132,8 @@ async def audio_enroll(
     file_path = save_file_with_hash(file_bytes, ext)
     try:
         # enroll_speaker expects a name and a file path
-        audio.enroll_speaker(user, file_path)
-        return {"message": f"User {user} enrolled successfully."}
+        audio.enroll_speaker(token, file_path)
+        return {"message": f"User {token} enrolled successfully."}
     finally:
         delete_file(file_path)
 

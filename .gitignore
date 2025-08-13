@@ -203,7 +203,8 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Main app
-messages.json
 .env
 audio_test
 speaker_db.npy
+tokens.json
+memories

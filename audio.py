@@ -60,18 +60,19 @@ def mp3_to_wav(mp3_path: str, wav_path: str):
     audio = audio.set_frame_rate(16000).set_channels(1)
     audio.export(wav_path, format="wav")
 
-def enroll_speaker(name: str, mp3_path: str):
-    name = name.lower()
+def enroll_speaker(token: str, mp3_path: str):
+    token = token.lower()
     wav_path = mp3_path.replace(".mp3", ".wav")
     mp3_to_wav(mp3_path, wav_path)
     wav = preprocess_wav(wav_path)
     embedding = encoder.embed_utterance(wav)
-    if name in speaker_db:
-        speaker_db[name].append(embedding)
-        print(f"[+] Added another embedding for speaker '{name}'.")
+    if token in speaker_db:
+        speaker_db[token].append(embedding)
+        print(f"[+] Added another embedding for speaker '{token}'.")
     else:
-        speaker_db[name] = [embedding]
-        print(f"[✔] Enrolled new speaker '{name}'.")
+        speaker_db[token] = [embedding]
+        print(f"[✔] Enrolled new speaker '{token}'.")
+    
     np.save(SPEAKER_DB_PATH, speaker_db)
 
 def classify_and_transcribe(mp3_path: str):
@@ -97,8 +98,8 @@ def classify_and_transcribe(mp3_path: str):
         audio, sr = get_segment_audio(wav_path, turn)
         emb = encoder.embed_utterance(audio.numpy()[0])
         scores = {
-            name: max(1 - cosine(emb, ref_emb) for ref_emb in emb_list)
-            for name, emb_list in speaker_db.items()
+            token: max(1 - cosine(emb, ref_emb) for ref_emb in emb_list)
+            for token, emb_list in speaker_db.items()
         }
 
         best_speaker = max(scores, key=scores.get)
@@ -120,8 +121,10 @@ def classify_and_transcribe(mp3_path: str):
 def transcribe(mp3_path: str):
     wav_path = mp3_path.replace(".mp3", ".wav")
     mp3_to_wav(mp3_path, wav_path)
+    
     result = whisper_model.transcribe(wav_path, language="en", verbose=False)
     full_transcript = result["text"]
+    
     return full_transcript
 
 def tts(text: str):
@@ -129,8 +132,11 @@ def tts(text: str):
     h = hashlib.sha256(text.encode()).hexdigest()
     print(f"hashed tts file: /tmp/{h}.mp3")
     filepath = f"/tmp/{h}.mp3"
+    
     if exists(filepath):
         print(f"tts file already exists: {filepath}")
         return filepath
+    
     tts.save(filepath)
+    
     return filepath
