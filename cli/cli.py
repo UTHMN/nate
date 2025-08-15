@@ -99,24 +99,40 @@ def main(
         except requests.exceptions.RequestException as e:
             console.print(f"[bold red]Error during enrollment:[/bold red] Could not connect to the API. Please check your server URL and port. ({e})")
             typer.Exit(code=1)
-            
 
 @app.command()
 def ask(
     ctx: typer.Context,
-    prompt: Annotated[str, typer.Argument(help="The prompt to send to the AI.")]
+    prompt: Annotated[str, typer.Argument(help="The prompt to send to the AI.")] = "",
+    file: Annotated[Path, typer.Option("-f", "--file", help="Path to a text file to use as the prompt.")] = None
 ):
     """
-    Ask the AI a question.
+    Ask the AI a question. Can take a string prompt or a text file.
     """
     config: AppConfig = ctx.obj["config"]
+
+    if file:
+        if prompt:
+            console.print("[bold red]Error: Cannot use both a prompt and a file. Please choose one.[/bold red]")
+            raise typer.Exit(code=1)
+        try:
+            prompt_text = file.read_text()
+        except FileNotFoundError:
+            console.print(f"[bold red]Error: File not found at '{file}'[/bold red]")
+            raise typer.Exit(code=1)
+    else:
+        if not prompt:
+            console.print("[bold red]Error: A prompt or a file must be provided.[/bold red]")
+            raise typer.Exit(code=1)
+        prompt_text = prompt
+
     if not config.token:
         console.print("[bold red]Error: No token found. Please run with -i or enroll a user first.[/bold red]")
         raise typer.Exit(code=1)
 
     try:
-        console.print(f"[bold cyan]Sending prompt:[/bold cyan] {prompt}")
-        response = requests.post(f"{config.base_url}/messages/ask", json={"prompt": prompt, "token": config.token})
+        console.print(f"[bold cyan]Sending prompt:[/bold cyan] {prompt_text[:50]}...")
+        response = requests.post(f"{config.base_url}/messages/ask", json={"prompt": prompt_text, "token": config.token})
         response.raise_for_status()
         result = response.json()
         if "message" in result:
