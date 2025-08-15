@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+    <title>Set Token</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h2>Enter your token:</h2>
+    <form id="tokenForm">
+        <input type="text" name="token" placeholder="Enter token" required>
+        <button type="submit">Submit</button>
+    </form>
+    <p id="status"></p>
+
+    <script>
+        const form = document.getElementById('tokenForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault(); // prevent page reload
+            const formData = new FormData(form);
+            const token = formData.get('token');
+
+            const response = await fetch('/set_token_ajax', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token})
+            });
+
+            const result = await response.json();
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = result.message;
+
+            if (response.ok) {
+                // Wait 3 seconds before starting countdown
+                setTimeout(() => {
+                    let countdown = 3; // seconds to redirect
+                    statusEl.innerText = `Success! Redirecting to home in ${countdown} seconds`;
+
+                    const interval = setInterval(() => {
+                        countdown--;
+                        statusEl.innerText = `Success! Redirecting to home in ${countdown} seconds`;
+                        if (countdown <= 0) {
+                            clearInterval(interval);
+                            window.location.href = '/'; // redirect to home
+                        }
+                    }, 1000);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

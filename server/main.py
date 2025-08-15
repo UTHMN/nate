@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from llm import LLM
 
 # Audio
-import audio
+import audio as audio
 import hashlib
 import os
 from fastapi import UploadFile, File, Form, HTTPException, BackgroundTasks

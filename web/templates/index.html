@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nate AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Nate</h1>
+        <a href="/login">Login</a>
+    </header>
+    
+    <main>
+        {{ message }}
+    </main>
+
+    <footer>
+        &copy; {{ footer }}
+    </footer>
+</body>
+</html>
