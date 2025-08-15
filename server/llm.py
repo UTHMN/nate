@@ -33,12 +33,13 @@ class LLM:
             elif self.provider == "google":
                 self.model = "gemma-3-27b-it"
         
+        # Eliot, Enhanced Linux Interface & Operations Toolkit
         self.system = [
             {
                 "role": "system",
                 "content": """
-                You are an ai assistant, your name is Nate.
-                You are messages in format username: message. which is used to identify who is speaking to you.
+                You are an ai assistant, your name is Eliot.
+                You are messages in format username: message. which is used to identify who is speaking to you. DO NOT RESPOND IN THIS FORMAT
                 Be concise and follow user instructions. You can act differently based on which user speaks to you (in first impression, infer based on factors like tone and username).
                 
                 You will be given data in the format: Username: message. which is used to identify who is speaking to you, they may request to be identified with a different name or alias.
@@ -140,6 +141,10 @@ class LLM:
         })
         
         full_conversation_for_google = self._convert_to_google_format(messages)
+        full_conversation_for_google.insert(0, {
+            "role": "model",
+            "parts": [{"text": self.system[0]['content']}]
+        })
 
         try:
             # Initialize the Google GenAI client and make the API call.
